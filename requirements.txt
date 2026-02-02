@@ -1,0 +1,15 @@
+python-dotenv
+requests
+feedparser
+playwright
+playwright-stealth
+pandas
+fastapi
+uvicorn
+anthropic
+openai
+aiohttp
+pyyaml
+beautifulsoup4
+lxml
+praw

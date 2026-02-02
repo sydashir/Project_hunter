@@ -1,0 +1,137 @@
+# Project Hunter - Niche Definitions
+# Keywords and patterns for classifying discovered sites into niches
+
+niches:
+  space:
+    name: "Space & Astronomy"
+    keywords:
+      - "space"
+      - "astronomy"
+      - "galaxy"
+      - "planet"
+      - "star"
+      - "cosmos"
+      - "nasa"
+      - "telescope"
+      - "rocket"
+      - "satellite"
+      - "astronaut"
+      - "mars"
+      - "moon"
+      - "solar"
+      - "universe"
+      - "asteroid"
+      - "comet"
+    weight: 1.0
+
+  science:
+    name: "General Science"
+    keywords:
+      - "science"
+      - "research"
+      - "study"
+      - "discovery"
+      - "scientists"
+      - "experiment"
+      - "scientific"
+      - "laboratory"
+      - "biology"
+      - "chemistry"
+      - "geology"
+      - "climate"
+      - "environment"
+      - "nature"
+    weight: 1.0
+
+  health:
+    name: "Health & Medicine"
+    keywords:
+      - "health"
+      - "medical"
+      - "medicine"
+      - "disease"
+      - "treatment"
+      - "therapy"
+      - "wellness"
+      - "nutrition"
+      - "fitness"
+      - "doctor"
+      - "hospital"
+      - "patient"
+      - "vaccine"
+      - "drug"
+      - "clinical"
+      - "cancer"
+      - "brain"
+      - "heart"
+    weight: 1.0
+
+  physics:
+    name: "Physics"
+    keywords:
+      - "physics"
+      - "quantum"
+      - "particle"
+      - "energy"
+      - "matter"
+      - "atom"
+      - "electron"
+      - "neutron"
+      - "photon"
+      - "relativity"
+      - "gravitational"
+      - "nuclear"
+      - "fusion"
+      - "electromagnetic"
+    weight: 1.0
+
+  technology:
+    name: "Technology"
+    keywords:
+      - "technology"
+      - "tech"
+      - "innovation"
+      - "artificial intelligence"
+      - "ai"
+      - "machine learning"
+      - "software"
+      - "hardware"
+      - "computer"
+      - "digital"
+      - "robot"
+      - "automation"
+      - "gadget"
+      - "app"
+      - "startup"
+      - "silicon valley"
+    weight: 1.0
+
+  astronomy:
+    name: "Astronomy"
+    keywords:
+      - "astronomy"
+      - "astronomical"
+      - "celestial"
+      - "constellation"
+      - "nebula"
+      - "supernova"
+      - "black hole"
+      - "dark matter"
+      - "exoplanet"
+      - "hubble"
+      - "observatory"
+    weight: 1.0
+
+# Scoring weights for relevance calculation
+scoring_weights:
+  niche_keyword_match: 0.30  # How well domain/content matches niche keywords
+  rss_feed_exists: 0.15      # Has active RSS/Atom feed
+  content_freshness: 0.20    # Published articles in last 30 days
+  domain_authority: 0.25     # Estimated authority (backlinks, traffic)
+  mobile_optimized: 0.10     # Responsive design
+
+# Classification settings
+classification:
+  min_keyword_matches: 3  # Minimum keyword matches to assign niche
+  allow_multiple_niches: true  # Site can belong to multiple niches
+  primary_niche_threshold: 0.7  # Score threshold for primary niche assignment

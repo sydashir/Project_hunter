@@ -1,0 +1,37 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+.env
+data/articles/*.db
+data/articles/*.db-shm
+data/articles/*.db-wal
+data/competitors/*.json
+data/intelligence/*.json
+data/logs/*.log
+
+# Keep directory structure
+!.gitkeep
