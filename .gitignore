@@ -8,30 +8,68 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.py[cod]
+*$py.class
 
 # Virtual Environment
 venv/
 env/
 ENV/
+.venv/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+*.bak
+*~
 
-# Project specific
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Data directories (generated at runtime)
 data/articles/*.db
 data/articles/*.db-shm
 data/articles/*.db-wal
+data/articles/dna_profiles/
 data/competitors/*.json
 data/intelligence/*.json
 data/logs/*.log
+data/*.csv
+data/*.json
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.pid
+nohup.out
+
+# Streamlit cache
+.streamlit/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Keep directory structure
 !.gitkeep
+!data/.gitkeep
+!data/articles/.gitkeep
+!data/competitors/.gitkeep
+!data/intelligence/.gitkeep
+!data/logs/.gitkeep
+
+# Documentation (keep these)
+!README.md
+!*.md

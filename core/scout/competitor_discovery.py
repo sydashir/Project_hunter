@@ -39,6 +39,7 @@ class CompetitorDiscovery:
         self.max_depth = 3
         self.target_count = 150
         self.min_relevance_score = 0.6
+        self.discovery_mode = "chrome_extension"  # or "bfs_crawl" for fallback
 
         # Tracking
         self.discovered: Dict[str, CompetitorSite] = {}
@@ -329,6 +330,47 @@ class CompetitorDiscovery:
                 return True
 
         return False
+
+    def load_from_extension(self) -> List[CompetitorSite]:
+        """
+        Load competitors discovered via Chrome extension
+        Extension sends data to API, which stores in database
+        """
+        print(f"[Discovery] Loading competitors from Chrome extension data...")
+
+        # Load all competitors with discovery_source="chrome_extension"
+        all_competitors = self.db.load_competitors()
+        extension_competitors = [
+            c for c in all_competitors
+            if c.discovery_source == "chrome_extension"
+        ]
+
+        # Infer niches for new competitors
+        for site in extension_competitors:
+            if site.niche == "unknown":
+                site.niche = self._infer_niche_from_content(
+                    domain=site.domain,
+                    title=site.metadata.get('sample_title', '')
+                )
+
+        # Save updated competitors
+        self.db.save_competitors(extension_competitors)
+
+        print(f"[Discovery] Loaded {len(extension_competitors)} competitors from extension")
+        return extension_competitors
+
+    def _infer_niche_from_content(self, domain: str, title: str) -> str:
+        """Infer niche from domain name and article title"""
+        content_lower = (domain + " " + title).lower()
+
+        niche_scores = {}
+        for niche_name, niche_data in self.niches.items():
+            keywords = niche_data.get('keywords', [])
+            matches = sum(1 for kw in keywords if kw.lower() in content_lower)
+            niche_scores[niche_name] = matches
+
+        best_niche = max(niche_scores, key=niche_scores.get)
+        return best_niche if niche_scores[best_niche] > 0 else "general"
 
 
 async def main():

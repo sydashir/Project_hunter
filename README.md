@@ -112,11 +112,69 @@ If you see help text, you're good to go!
 
 ---
 
+## 📊 NEW: Real-Time Dashboard
+
+**Visualize everything in your browser!**
+
+```bash
+streamlit run dashboard.py
+```
+
+**Features:**
+- 📊 Real-time domain capture visualization
+- 🔍 Interactive competitor browser with filters
+- 📈 Intelligence analysis with charts
+- 📥 CSV export functionality
+- ⚙️ System status monitoring
+
+Opens automatically at: `http://localhost:8501`
+
+See: [DASHBOARD_GUIDE.md](DASHBOARD_GUIDE.md) for full details
+
+---
+
 ## 🚀 Quick Start
 
-### **Step 1: Run Discovery** (2-4 hours)
+### **NEW: Chrome Extension Method (Recommended)**
 
-Discovers 100+ competitors and their RSS feeds.
+**Uses passive monitoring - 100% legal, zero ban risk, most accurate**
+
+1. **Install Chrome Extension** (see [SETUP_GUIDE.md](SETUP_GUIDE.md) for details):
+   ```bash
+   # Open chrome://extensions/
+   # Enable Developer Mode
+   # Load unpacked -> select chrome_extension/ folder
+   ```
+
+2. **Start API Server**:
+   ```bash
+   python api/discover_api.py
+   ```
+
+3. **Browse Google Discover** (30-60 minutes casual browsing):
+   - Go to google.com or google.com/discover
+   - Scroll through your feed naturally
+   - Extension captures domains automatically
+   - Target: 100-200 domains
+
+4. **Load Discovered Competitors**:
+   ```bash
+   python scripts/run_discovery.py
+   ```
+
+**Why this method?**
+- ✅ Discovers sites ACTUALLY in Google Discover (not random blogs)
+- ✅ Zero ban risk (no automation, just observing your own feed)
+- ✅ 100% legal (your own browsing data)
+- ✅ Most accurate results
+
+See full setup guide: [SETUP_GUIDE.md](SETUP_GUIDE.md)
+
+---
+
+### **Alternative: BFS Crawler Method** (Original)
+
+Discovers competitors by crawling from seed URLs.
 
 **Mac/Linux:**
 ```bash
@@ -133,6 +191,8 @@ python scripts\run_discovery.py
 - Discovers 100-150 competitor sites using BFS algorithm
 - Auto-detects RSS feeds for all competitors
 - Saves to `data/competitors/`
+
+**Note:** This finds sites that link to each other, but doesn't guarantee they're in Google Discover.
 
 ---
 
@@ -223,6 +283,17 @@ python scripts\generate_report.py
 
 ```
 project-hunter/
+├── chrome_extension/          # NEW: Chrome extension for passive monitoring
+│   ├── manifest.json
+│   ├── content.js
+│   ├── background.js
+│   ├── popup.html
+│   └── popup.js
+│
+├── api/                       # NEW: FastAPI server
+│   ├── discover_api.py
+│   └── test_api.py
+│
 ├── config/
 │   ├── seed_urls.yaml        # 7 seed competitors + discovery settings
 │   └── niches.yaml            # 6 niches with keywords
@@ -268,7 +339,8 @@ project-hunter/
 ├── .env                       # API keys (create this)
 ├── .gitignore
 ├── requirements.txt
-└── README.md
+├── README.md
+└── SETUP_GUIDE.md            # NEW: Detailed Chrome extension setup
 ```
 
 ---

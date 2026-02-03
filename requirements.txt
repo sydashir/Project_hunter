@@ -13,3 +13,5 @@ pyyaml
 beautifulsoup4
 lxml
 praw
+streamlit
+plotly

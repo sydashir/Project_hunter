@@ -33,7 +33,7 @@ class CompetitorSite:
     url: str
     niche: str
     sub_niches: List[str] = field(default_factory=list)
-    discovery_source: str = "seed"  # "seed" or "crawler"
+    discovery_source: str = "seed"  # "seed", "crawler", or "chrome_extension"
     discovered_from: Optional[str] = None  # parent URL
     discovery_date: str = field(default_factory=lambda: datetime.now().isoformat())
     authority_score: float = 0.0  # 0-100

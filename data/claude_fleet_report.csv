@@ -1,7 +1,0 @@
-Model,Status,Notes
-claude-opus-4-5-20251101,⚠️ 400,Bad Request: `max_tokens` must be greater t
-claude-sonnet-4-5-20250929,⚠️ 400,Bad Request: `max_tokens` must be greater t
-claude-haiku-4-5-20251001,⚠️ 400,Bad Request: `max_tokens` must be greater t
-claude-3-7-sonnet-20250219,❌ 404,Model Not Found / Tier Restricted
-claude-3-5-sonnet-20241022,⚠️ 400,Bad Request: thinking: Input should be a va
-claude-3-haiku-20240307,⚠️ 400,Bad Request: thinking: Input should be a va
