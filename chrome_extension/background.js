@@ -11,13 +11,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Send article to API
 async function sendToAPI(data) {
   try {
-    await fetch(`${API_URL}/api/discover/article`, {
+    const response = await fetch(`${API_URL}/api/discover/article`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    console.log('[API] Sent:', data.domain);
-    updateBadge();
+    if (response.ok) {
+      console.log('[API] Sent:', data.domain);
+      updateBadge();
+    } else {
+      console.error('[API] Server error:', response.status);
+    }
   } catch (err) {
     console.error('[API] Error:', err);
   }
