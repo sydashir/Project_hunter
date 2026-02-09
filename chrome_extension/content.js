@@ -13,7 +13,7 @@ const EXCLUDED = [
 ];
 
 function isExcluded(domain) {
-  return EXCLUDED.some(ex => domain.includes(ex));
+  return EXCLUDED.some(ex => domain === ex || domain.endsWith('.' + ex));
 }
 
 function extractDomain(url) {
