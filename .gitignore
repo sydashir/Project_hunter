@@ -46,6 +46,10 @@ data/intelligence/*.json
 data/logs/*.log
 data/*.csv
 data/*.json
+data/dna_analysis/
+
+# CSV files everywhere
+*.csv
 
 # Temporary files
 *.tmp

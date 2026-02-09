@@ -46,6 +46,11 @@ class CompetitorSite:
     def to_dict(self) -> Dict:
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'CompetitorSite':
+        """Create CompetitorSite from dictionary"""
+        return cls(**data)
 
 
 @dataclass
@@ -66,6 +71,11 @@ class RSSFeed:
 
     def to_dict(self) -> Dict:
         return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'RSSFeed':
+        """Create RSSFeed from dictionary"""
+        return cls(**data)
 
 
 @dataclass

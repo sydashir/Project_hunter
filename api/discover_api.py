@@ -26,8 +26,12 @@ app.add_middleware(
 )
 
 # Track discovered domains
-discovered_domains: Set[str] = set()
 db = Database()
+
+# Reload previously captured domains so they survive restarts
+discovered_domains: Set[str] = set()
+for site in db.load_competitors():
+    discovered_domains.add(site.get("domain", ""))
 
 class DiscoverArticle(BaseModel):
     domain: str
@@ -86,6 +90,7 @@ async def get_stats() -> Dict:
 async def reset() -> Dict:
     """Reset discovered domains (for testing)"""
     discovered_domains.clear()
+    db.save_competitors([])  # Clear the JSON file too
     return {"status": "reset", "total_domains": 0}
 
 if __name__ == "__main__":

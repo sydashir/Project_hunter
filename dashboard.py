@@ -1,698 +1,560 @@
 #!/usr/bin/env python3
 """
-Project Hunter - Real-Time Dashboard
-
-Streamlit dashboard for monitoring competitor discovery and intelligence analysis.
-Run with: streamlit run dashboard.py
+Project Hunter - Professional Dashboard
+Modern, sleek interface for competitor intelligence
 """
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
-import json
-import sqlite3
+from datetime import datetime
 import requests
 from pathlib import Path
+from collections import Counter
 import sys
 
 sys.path.append(str(Path(__file__).parent))
 
-from core.persistence.database import Database
-from core.persistence.models import CompetitorSite
-
-# Page configuration
+# Page config - must be first
 st.set_page_config(
-    page_title="Project Hunter Dashboard",
+    page_title="Project Hunter",
     page_icon="🎯",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# Custom CSS
+# Modern dark theme CSS
 st.markdown("""
 <style>
+    /* Import Inter font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* Global styles */
+    .stApp {
+        background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Hide default streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Main header */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.5rem;
+        font-weight: 700;
         text-align: center;
-        color: #1f77b4;
+        padding: 1rem 0;
         margin-bottom: 2rem;
     }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1f77b4;
+
+    .sub-header {
+        color: #a0aec0;
+        text-align: center;
+        font-size: 1rem;
+        margin-top: -1.5rem;
+        margin-bottom: 2rem;
     }
-    .stMetric {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
+
+    /* Metric cards */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
+    }
+
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .metric-label {
+        color: #a0aec0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 0.5rem;
+    }
+
+    /* Status indicator */
+    .status-online {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #10b981;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .status-offline {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        margin-right: 8px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    /* Section headers */
+    .section-header {
+        color: #e2e8f0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+    }
+
+    /* Domain list */
+    .domain-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin: 0.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+
+    .domain-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .domain-name {
+        color: #e2e8f0;
+        font-weight: 500;
+    }
+
+    .domain-position {
+        color: #667eea;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    /* Data table */
+    .dataframe {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-radius: 12px !important;
+    }
+
+    .dataframe th {
+        background: rgba(102, 126, 234, 0.2) !important;
+        color: #e2e8f0 !important;
+        font-weight: 600 !important;
+    }
+
+    .dataframe td {
+        color: #cbd5e0 !important;
+        border-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Progress bar */
+    .progress-container {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        height: 12px;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+
+    .progress-bar {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease;
+    }
+
+    /* Info box */
+    .info-box {
+        background: rgba(102, 126, 234, 0.1);
+        border: 1px solid rgba(102, 126, 234, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: #e2e8f0;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background: transparent;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        color: #a0aec0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        color: white;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.markdown('<div class="main-header">🎯 Project Hunter Dashboard</div>', unsafe_allow_html=True)
-
-# Sidebar
-with st.sidebar:
-    st.image("https://via.placeholder.com/150x150.png?text=🎯", width=150)
-    st.title("Navigation")
-
-    page = st.radio(
-        "Select View",
-        ["📊 Overview", "🔍 Competitor Discovery", "📈 Intelligence Analysis", "⚙️ Settings"]
-    )
-
-    st.markdown("---")
-    st.subheader("System Status")
-
-    # Check API status
+# API Functions
+def get_api_status():
     try:
         response = requests.get("http://localhost:8000/api/discover/stats", timeout=2)
         if response.status_code == 200:
-            st.success("✓ API Server Online")
-            api_online = True
-        else:
-            st.error("✗ API Server Error")
-            api_online = False
+            return True, response.json()
+        return False, {"total_domains": 0, "domains": []}
     except:
-        st.warning("⚠ API Server Offline")
-        api_online = False
+        return False, {"total_domains": 0, "domains": []}
 
-    # Database status
-    db = Database()
-    competitors = db.load_competitors()
-    st.info(f"📁 {len(competitors)} Competitors Loaded")
-
-    st.markdown("---")
-    st.caption("Last updated: " + datetime.now().strftime("%H:%M:%S"))
-
-    if st.button("🔄 Refresh Data"):
-        st.rerun()
-
-# Helper functions
-@st.cache_data(ttl=5)
-def get_api_stats():
-    """Get stats from API server"""
+def reset_api():
     try:
-        response = requests.get("http://localhost:8000/api/discover/stats", timeout=2)
-        if response.status_code == 200:
-            return response.json()
-        return {"total_domains": 0, "domains": []}
+        requests.post("http://localhost:8000/api/discover/reset", timeout=2)
+        return True
     except:
-        return {"total_domains": 0, "domains": []}
+        return False
 
-@st.cache_data(ttl=10)
 def load_competitors():
-    """Load competitors from database"""
-    db = Database()
-    return db.load_competitors()
-
-@st.cache_data(ttl=10)
-def load_articles():
-    """Load articles from SQLite database"""
-    db_path = Path("data/articles/articles.db")
-    if not db_path.exists():
-        return pd.DataFrame()
-
-    conn = sqlite3.connect(db_path)
-    query = "SELECT * FROM articles ORDER BY publish_date DESC LIMIT 1000"
     try:
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return df
+        from core.persistence.database import Database
+        db = Database()
+        return db.load_competitors()
     except:
-        conn.close()
-        return pd.DataFrame()
+        return []
 
-def load_intelligence():
-    """Load intelligence reports"""
-    intel_path = Path("data/intelligence")
+# Header
+st.markdown('<div class="main-header">🎯 Project Hunter</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Google Discover Competitor Intelligence</div>', unsafe_allow_html=True)
 
-    data = {
-        "niche_scores": {},
-        "patterns": {},
-        "title_formulas": [],
-        "timing_insights": {}
-    }
+# Get data
+api_online, api_data = get_api_status()
+total_domains = api_data.get("total_domains", 0)
+domains = api_data.get("domains", [])
+competitors = load_competitors()
 
-    if intel_path.exists():
-        for file in ["niche_scores.json", "patterns.json", "title_formulas.json", "timing_insights.json"]:
-            file_path = intel_path / file
-            if file_path.exists():
-                with open(file_path, 'r') as f:
-                    key = file.replace('.json', '')
-                    data[key] = json.load(f)
+# Status bar
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    if api_online:
+        st.markdown('''
+            <div style="text-align: center;">
+                <span class="status-online">
+                    <span class="pulse"></span>
+                    API Server Online
+                </span>
+            </div>
+        ''', unsafe_allow_html=True)
+    else:
+        st.markdown('''
+            <div style="text-align: center;">
+                <span class="status-offline">
+                    ⚠ API Server Offline
+                </span>
+            </div>
+        ''', unsafe_allow_html=True)
 
-    return data
+st.markdown("<br>", unsafe_allow_html=True)
 
-# ==================== OVERVIEW PAGE ====================
-if page == "📊 Overview":
-    st.header("System Overview")
+# Main metrics
+col1, col2, col3, col4 = st.columns(4)
 
-    # Top metrics
-    col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{total_domains}</div>
+            <div class="metric-label">Domains Captured</div>
+        </div>
+    ''', unsafe_allow_html=True)
 
-    api_stats = get_api_stats()
-    competitors = load_competitors()
-    articles_df = load_articles()
+with col2:
+    st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{len(competitors)}</div>
+            <div class="metric-label">Stored in DB</div>
+        </div>
+    ''', unsafe_allow_html=True)
 
-    with col1:
-        st.metric(
-            label="🔍 Domains Captured",
-            value=api_stats.get("total_domains", 0),
-            delta="Live from extension"
-        )
+with col3:
+    target = 100
+    progress_pct = min(int((total_domains / target) * 100), 100)
+    st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{progress_pct}%</div>
+            <div class="metric-label">Target Progress</div>
+        </div>
+    ''', unsafe_allow_html=True)
 
-    with col2:
-        st.metric(
-            label="🎯 Competitors Stored",
-            value=len(competitors),
-            delta=f"{len([c for c in competitors if c.discovery_source == 'chrome_extension'])} from extension"
-        )
+with col4:
+    unique_tlds = len(set([d.split('.')[-1] if '.' in d else d for d in domains]))
+    st.markdown(f'''
+        <div class="metric-card">
+            <div class="metric-value">{unique_tlds}</div>
+            <div class="metric-label">Unique TLDs</div>
+        </div>
+    ''', unsafe_allow_html=True)
 
-    with col3:
-        st.metric(
-            label="📰 Articles Monitored",
-            value=len(articles_df) if not articles_df.empty else 0,
-            delta="Total articles"
-        )
+# Progress bar
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown(f'''
+    <div class="progress-container">
+        <div class="progress-bar" style="width: {progress_pct}%;"></div>
+    </div>
+    <p style="color: #a0aec0; text-align: center; font-size: 0.85rem;">
+        {total_domains} of {target} domains captured
+    </p>
+''', unsafe_allow_html=True)
 
-    with col4:
-        extension_comps = [c for c in competitors if c.discovery_source == 'chrome_extension']
-        if extension_comps:
-            niches = set([c.niche for c in extension_comps])
-            st.metric(
-                label="📊 Niches Discovered",
-                value=len(niches),
-                delta="Active niches"
-            )
-        else:
-            st.metric(label="📊 Niches Discovered", value=0)
+# Tabs
+st.markdown("<br>", unsafe_allow_html=True)
+tab1, tab2, tab3 = st.tabs(["📡 Live Capture", "📊 Analytics", "⚙️ Controls"])
 
-    st.markdown("---")
+with tab1:
+    st.markdown('<div class="section-header">Recently Captured Domains</div>', unsafe_allow_html=True)
 
-    # Real-time capture visualization
-    col1, col2 = st.columns([2, 1])
+    if domains:
+        # Show last 20 domains
+        recent = domains[-20:][::-1]
 
-    with col1:
-        st.subheader("📡 Real-Time Domain Capture")
+        for i, domain in enumerate(recent):
+            position = len(domains) - i
+            st.markdown(f'''
+                <div class="domain-item">
+                    <span class="domain-name">{domain}</span>
+                    <span class="domain-position">#{position}</span>
+                </div>
+            ''', unsafe_allow_html=True)
 
-        if api_stats.get("total_domains", 0) > 0:
-            domains = api_stats.get("domains", [])
-            recent_domains = domains[-20:]  # Last 20
+        if len(domains) > 20:
+            st.markdown(f'''
+                <p style="color: #a0aec0; text-align: center; margin-top: 1rem;">
+                    Showing 20 of {len(domains)} domains
+                </p>
+            ''', unsafe_allow_html=True)
+    else:
+        st.markdown('''
+            <div class="info-box">
+                <h4 style="margin: 0 0 0.5rem 0;">👋 No domains captured yet</h4>
+                <p style="margin: 0; opacity: 0.8;">
+                    Start browsing Google Discover with the Chrome extension to capture competitor domains.
+                </p>
+            </div>
+        ''', unsafe_allow_html=True)
 
-            df_recent = pd.DataFrame({
-                'Domain': recent_domains,
-                'Position': list(range(len(recent_domains)))
-            })
+with tab2:
+    st.markdown('<div class="section-header">Domain Analytics</div>', unsafe_allow_html=True)
 
-            fig = px.bar(
-                df_recent,
-                x='Position',
-                y=[1] * len(recent_domains),
-                text='Domain',
-                title="Recently Captured Domains",
-                labels={'y': 'Captured'},
-                color_discrete_sequence=['#1f77b4']
-            )
-            fig.update_traces(textposition='outside', textangle=45)
-            fig.update_layout(showlegend=False, height=300)
-            st.plotly_chart(fig, use_container_width=True)
-
-            st.caption(f"Showing last {len(recent_domains)} of {len(domains)} captured domains")
-        else:
-            st.info("⏳ No domains captured yet. Start browsing Google Discover with the extension!")
-
-    with col2:
-        st.subheader("🎯 Extension Status")
-
-        if api_stats.get("total_domains", 0) > 0:
-            st.success("✓ Extension Active")
-            st.metric("Domains in Memory", api_stats.get("total_domains"))
-
-            # Progress to target
-            target = 150
-            progress = min(api_stats.get("total_domains", 0) / target, 1.0)
-            st.progress(progress)
-            st.caption(f"Target: {target} domains")
-        else:
-            st.warning("⚠ No Data Yet")
-            st.info("""
-            **To start capturing:**
-            1. Install Chrome extension
-            2. Start API server
-            3. Browse Google Discover
-            """)
-
-    st.markdown("---")
-
-    # Competitor overview
-    if competitors:
-        st.subheader("🏆 Competitor Overview")
-
+    if domains:
         col1, col2 = st.columns(2)
 
         with col1:
-            # By niche
-            niche_counts = {}
-            for comp in competitors:
-                niche_counts[comp.niche] = niche_counts.get(comp.niche, 0) + 1
+            # TLD distribution
+            tlds = [d.split('.')[-1] if '.' in d else 'other' for d in domains]
+            tld_counts = pd.Series(tlds).value_counts().head(10)
 
-            df_niches = pd.DataFrame(list(niche_counts.items()), columns=['Niche', 'Count'])
-            df_niches = df_niches.sort_values('Count', ascending=False)
-
-            fig = px.pie(
-                df_niches,
-                values='Count',
-                names='Niche',
-                title='Competitors by Niche',
-                color_discrete_sequence=px.colors.qualitative.Set3
+            fig = go.Figure(data=[go.Pie(
+                labels=tld_counts.index,
+                values=tld_counts.values,
+                hole=0.6,
+                marker_colors=px.colors.sequential.Purples_r
+            )])
+            fig.update_layout(
+                title="Domain TLDs",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_color='#e2e8f0',
+                showlegend=True,
+                legend=dict(font=dict(color='#a0aec0')),
+                margin=dict(t=50, b=20, l=20, r=20)
             )
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
-            # By discovery source
-            source_counts = {}
-            for comp in competitors:
-                source_counts[comp.discovery_source] = source_counts.get(comp.discovery_source, 0) + 1
+            # Capture timeline (simulated based on position)
+            positions = list(range(1, len(domains) + 1))
 
-            df_sources = pd.DataFrame(list(source_counts.items()), columns=['Source', 'Count'])
-
-            fig = px.bar(
-                df_sources,
-                x='Source',
-                y='Count',
-                title='Discovery Sources',
-                color='Source',
-                color_discrete_sequence=px.colors.qualitative.Pastel
+            fig = go.Figure(data=[go.Scatter(
+                x=positions,
+                y=list(range(1, len(domains) + 1)),
+                mode='lines+markers',
+                line=dict(color='#667eea', width=2),
+                marker=dict(size=4, color='#764ba2'),
+                fill='tozeroy',
+                fillcolor='rgba(102, 126, 234, 0.1)'
+            )])
+            fig.update_layout(
+                title="Capture Progress",
+                xaxis_title="Capture Order",
+                yaxis_title="Total Domains",
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font_color='#e2e8f0',
+                xaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                margin=dict(t=50, b=50, l=50, r=20)
             )
             st.plotly_chart(fig, use_container_width=True)
 
-    # Articles timeline
-    if not articles_df.empty and 'publish_date' in articles_df.columns:
-        st.subheader("📈 Article Timeline")
+        # Domain table
+        st.markdown('<div class="section-header">All Captured Domains</div>', unsafe_allow_html=True)
 
-        articles_df['publish_date'] = pd.to_datetime(articles_df['publish_date'])
-        articles_df['date'] = articles_df['publish_date'].dt.date
+        df = pd.DataFrame({
+            'Position': range(1, len(domains) + 1),
+            'Domain': domains,
+            'TLD': [d.split('.')[-1] if '.' in d else '-' for d in domains]
+        })
 
-        daily_counts = articles_df.groupby('date').size().reset_index(name='count')
-
-        fig = px.line(
-            daily_counts,
-            x='date',
-            y='count',
-            title='Articles Monitored Over Time',
-            labels={'date': 'Date', 'count': 'Articles'},
-            markers=True
+        st.dataframe(
+            df,
+            use_container_width=True,
+            height=400,
+            hide_index=True
         )
-        st.plotly_chart(fig, use_container_width=True)
 
-# ==================== COMPETITOR DISCOVERY PAGE ====================
-elif page == "🔍 Competitor Discovery":
-    st.header("Competitor Discovery")
-
-    competitors = load_competitors()
-
-    if not competitors:
-        st.warning("⚠ No competitors discovered yet")
-        st.info("""
-        **Get started:**
-        1. Install Chrome extension
-        2. Start API server: `python api/discover_api.py`
-        3. Browse Google Discover for 30-60 minutes
-        4. Run: `python scripts/run_discovery.py`
-        """)
-    else:
-        # Filters
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            all_niches = sorted(list(set([c.niche for c in competitors])))
-            selected_niches = st.multiselect("Filter by Niche", all_niches, default=all_niches)
-
-        with col2:
-            all_sources = sorted(list(set([c.discovery_source for c in competitors])))
-            selected_sources = st.multiselect("Filter by Source", all_sources, default=all_sources)
-
-        with col3:
-            min_score = st.slider("Minimum Authority Score", 0, 100, 0)
-
-        # Filter competitors
-        filtered = [
-            c for c in competitors
-            if c.niche in selected_niches
-            and c.discovery_source in selected_sources
-            and c.authority_score >= min_score
-        ]
-
-        st.metric("Filtered Competitors", len(filtered))
-
-        # Sort options
-        sort_by = st.selectbox("Sort by", ["Authority Score", "Domain", "Niche", "Discovery Date"])
-
-        if sort_by == "Authority Score":
-            filtered = sorted(filtered, key=lambda x: x.authority_score, reverse=True)
-        elif sort_by == "Domain":
-            filtered = sorted(filtered, key=lambda x: x.domain)
-        elif sort_by == "Niche":
-            filtered = sorted(filtered, key=lambda x: x.niche)
-        else:
-            filtered = sorted(filtered, key=lambda x: x.discovery_date, reverse=True)
-
-        # Display as table
-        st.subheader(f"📋 Competitors ({len(filtered)})")
-
-        # Convert to DataFrame
-        data = []
-        for comp in filtered:
-            position = comp.metadata.get('discover_position', 'N/A') if comp.metadata else 'N/A'
-            sample_title = comp.metadata.get('sample_title', '') if comp.metadata else ''
-
-            data.append({
-                'Domain': comp.domain,
-                'Niche': comp.niche,
-                'Authority': f"{comp.authority_score:.0f}",
-                'Position': position,
-                'Source': comp.discovery_source,
-                'RSS Feeds': len(comp.rss_feeds),
-                'Sample Title': sample_title[:50] + '...' if len(sample_title) > 50 else sample_title
-            })
-
-        df = pd.DataFrame(data)
-        st.dataframe(df, use_container_width=True, height=500)
-
-        # Download button
+        # Export
         csv = df.to_csv(index=False)
         st.download_button(
-            label="📥 Download as CSV",
-            data=csv,
-            file_name=f"competitors_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv"
+            "📥 Export to CSV",
+            csv,
+            f"discover_domains_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            "text/csv"
         )
-
-        # Top performers
-        st.subheader("🏆 Top 10 Performers")
-
-        top_10 = sorted(competitors, key=lambda x: x.authority_score, reverse=True)[:10]
-
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            for i, comp in enumerate(top_10, 1):
-                st.metric(
-                    label=f"{i}. {comp.domain}",
-                    value=f"{comp.authority_score:.0f}",
-                    delta=comp.niche
-                )
-
-        with col2:
-            df_top = pd.DataFrame([
-                {'Domain': c.domain, 'Authority Score': c.authority_score, 'Niche': c.niche}
-                for c in top_10
-            ])
-
-            fig = px.bar(
-                df_top,
-                x='Authority Score',
-                y='Domain',
-                color='Niche',
-                orientation='h',
-                title='Top 10 Competitors by Authority Score'
-            )
-            fig.update_layout(yaxis={'categoryorder': 'total ascending'})
-            st.plotly_chart(fig, use_container_width=True)
-
-# ==================== INTELLIGENCE ANALYSIS PAGE ====================
-elif page == "📈 Intelligence Analysis":
-    st.header("Intelligence Analysis")
-
-    intel = load_intelligence()
-    articles_df = load_articles()
-
-    if not intel.get("niche_scores"):
-        st.warning("⚠ No intelligence data yet")
-        st.info("""
-        **Generate intelligence:**
-        1. Complete competitor discovery
-        2. Run monitoring: `python scripts/run_monitor.py --cycles 5`
-        3. Generate report: `python scripts/generate_report.py`
-        """)
     else:
-        # Niche scores
-        st.subheader("🔥 Niche Performance")
+        st.info("No data to analyze yet. Start capturing domains first.")
 
-        niche_scores = intel.get("niche_scores", {})
-
-        if niche_scores:
-            # Create DataFrame
-            df_niches = pd.DataFrame([
-                {
-                    'Niche': niche,
-                    'Score': data.get('score', 0),
-                    'Articles': data.get('article_count', 0),
-                    'Velocity': data.get('velocity', 0),
-                    'Rating': data.get('rating', 'UNKNOWN')
-                }
-                for niche, data in niche_scores.items()
-            ]).sort_values('Score', ascending=False)
-
-            # Display metrics
-            col1, col2, col3 = st.columns(3)
-
-            if not df_niches.empty:
-                winner = df_niches.iloc[0]
-
-                with col1:
-                    st.metric(
-                        label="🏆 Winning Niche",
-                        value=winner['Niche'].upper(),
-                        delta=f"Score: {winner['Score']}/100"
-                    )
-
-                with col2:
-                    st.metric(
-                        label="📰 Total Articles",
-                        value=int(df_niches['Articles'].sum()),
-                        delta=f"{winner['Articles']} in winning niche"
-                    )
-
-                with col3:
-                    st.metric(
-                        label="⚡ Avg Velocity",
-                        value=f"{df_niches['Velocity'].mean():.1f}/day",
-                        delta=f"{winner['Velocity']:.1f}/day for winner"
-                    )
-
-            # Charts
-            col1, col2 = st.columns(2)
-
-            with col1:
-                fig = px.bar(
-                    df_niches,
-                    x='Niche',
-                    y='Score',
-                    color='Rating',
-                    title='Niche Scores (0-100)',
-                    color_discrete_map={
-                        'HOT': '#ff4444',
-                        'WARM': '#ff9944',
-                        'MODERATE': '#ffdd44',
-                        'COLD': '#4444ff'
-                    }
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-            with col2:
-                fig = px.scatter(
-                    df_niches,
-                    x='Articles',
-                    y='Velocity',
-                    size='Score',
-                    color='Niche',
-                    title='Articles vs Velocity (size = score)',
-                    hover_data=['Rating']
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown("---")
-
-        # Structural patterns
-        st.subheader("📐 Structural Blueprint")
-
-        patterns = intel.get("patterns", {})
-
-        if patterns:
-            col1, col2, col3, col4 = st.columns(4)
-
-            with col1:
-                wc = patterns.get("word_count", {})
-                st.metric(
-                    "📝 Word Count",
-                    f"{wc.get('optimal', 'N/A')}",
-                    delta=f"Avg: {wc.get('average', 0):.0f}"
-                )
-
-            with col2:
-                img = patterns.get("images", {})
-                st.metric(
-                    "🖼 Images",
-                    f"{img.get('optimal', 'N/A')}",
-                    delta=f"Avg: {img.get('average', 0):.1f}"
-                )
-
-            with col3:
-                schema = patterns.get("schema_usage", {})
-                article_pct = schema.get("article", 0) * 100
-                st.metric(
-                    "📋 Schema Usage",
-                    f"{article_pct:.0f}%",
-                    delta="Article schema"
-                )
-
-            with col4:
-                st.metric(
-                    "🏗 Structure",
-                    "H1→H2→H3",
-                    delta="Standard hierarchy"
-                )
-
-        st.markdown("---")
-
-        # Title formulas
-        st.subheader("💡 Title Formulas")
-
-        title_formulas = intel.get("title_formulas", [])
-
-        if title_formulas:
-            for i, formula in enumerate(title_formulas[:5], 1):
-                with st.expander(f"Formula {i}: {formula.get('formula', 'N/A')}"):
-                    st.write(f"**Success Rate:** {formula.get('success_rate', 0)*100:.0f}%")
-                    st.write(f"**Frequency:** {formula.get('frequency', 0)} occurrences")
-
-                    examples = formula.get('examples', [])
-                    if examples:
-                        st.write("**Examples:**")
-                        for ex in examples[:3]:
-                            st.write(f"- {ex}")
-
-        st.markdown("---")
-
-        # Timing insights
-        st.subheader("⏰ Timing Strategy")
-
-        timing = intel.get("timing_insights", {})
-
-        if timing:
-            col1, col2 = st.columns(2)
-
-            with col1:
-                best_hours = timing.get("best_hours", [])
-                if best_hours:
-                    st.write("**Best Publishing Times:**")
-                    for hour in best_hours:
-                        st.write(f"- {hour:02d}:00 (Peak engagement)")
-
-                best_days = timing.get("best_days", [])
-                if best_days:
-                    st.write("**Best Days:**")
-                    for day in best_days:
-                        st.write(f"- {day}")
-
-            with col2:
-                worst_days = timing.get("worst_days", [])
-                if worst_days:
-                    st.write("**Avoid Publishing On:**")
-                    for day in worst_days:
-                        st.write(f"- {day} (Low engagement)")
-
-                avg_time = timing.get("average_publish_time", "N/A")
-                st.write(f"**Average Publish Time:** {avg_time}")
-
-# ==================== SETTINGS PAGE ====================
-elif page == "⚙️ Settings":
-    st.header("Settings & Configuration")
-
-    st.subheader("🔧 System Configuration")
-
-    # API settings
-    with st.expander("API Server Settings"):
-        api_host = st.text_input("API Host", "localhost")
-        api_port = st.number_input("API Port", 1000, 65535, 8000)
-
-        if st.button("Test Connection"):
-            try:
-                response = requests.get(f"http://{api_host}:{api_port}/api/discover/stats", timeout=2)
-                if response.status_code == 200:
-                    st.success("✓ Connected successfully!")
-                    st.json(response.json())
-                else:
-                    st.error(f"✗ Error: Status {response.status_code}")
-            except Exception as e:
-                st.error(f"✗ Connection failed: {e}")
-
-    # Database settings
-    with st.expander("Database Settings"):
-        st.info("Database location: data/")
-
-        if st.button("Check Database Files"):
-            data_path = Path("data")
-            if data_path.exists():
-                files = list(data_path.rglob("*.*"))
-                st.write(f"Found {len(files)} files:")
-                for file in files[:20]:
-                    size = file.stat().st_size
-                    st.write(f"- {file.relative_to(data_path)} ({size:,} bytes)")
-            else:
-                st.warning("Data directory not found")
-
-    # Extension settings
-    with st.expander("Chrome Extension"):
-        st.markdown("""
-        **Installation:**
-        1. Open Chrome
-        2. Go to `chrome://extensions/`
-        3. Enable "Developer mode"
-        4. Click "Load unpacked"
-        5. Select `chrome_extension/` folder
-
-        **Extension Location:** `chrome_extension/`
-        """)
-
-        if st.button("View Extension Files"):
-            ext_path = Path("chrome_extension")
-            if ext_path.exists():
-                files = list(ext_path.glob("*"))
-                st.write(f"Extension files ({len(files)}):")
-                for file in files:
-                    st.write(f"- {file.name}")
-            else:
-                st.error("Extension directory not found")
-
-    # Data management
-    st.subheader("📁 Data Management")
+with tab3:
+    st.markdown('<div class="section-header">System Controls</div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        if st.button("🔄 Reload All Data"):
-            st.cache_data.clear()
-            st.success("Data reloaded!")
+        if st.button("🔄 Refresh Data", use_container_width=True):
             st.rerun()
 
     with col2:
-        if st.button("📊 Export Reports"):
-            st.info("Export functionality coming soon")
+        if st.button("🗑️ Reset Counter", use_container_width=True):
+            if reset_api():
+                st.success("Counter reset!")
+                st.rerun()
+            else:
+                st.error("Failed to reset")
 
     with col3:
-        if st.button("🗑 Clear Cache"):
+        if st.button("📊 Clear Cache", use_container_width=True):
             st.cache_data.clear()
             st.success("Cache cleared!")
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Instructions
+    st.markdown('''
+        <div class="info-box">
+            <h4 style="margin: 0 0 1rem 0;">📋 Quick Start Guide</h4>
+            <ol style="margin: 0; padding-left: 1.5rem; line-height: 2;">
+                <li>Start API server: <code>python api/discover_api.py</code></li>
+                <li>Install Chrome extension from <code>chrome_extension/</code></li>
+                <li>Open Chrome DevTools → Enable mobile emulation</li>
+                <li>Browse <code>google.com</code> and scroll through Discover</li>
+                <li>Watch the counter increase as domains are captured</li>
+            </ol>
+        </div>
+    ''', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # System info
+    st.markdown('<div class="section-header">System Status</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown(f'''
+            <div class="domain-item">
+                <span class="domain-name">API Server</span>
+                <span class="domain-position">{"✓ Online" if api_online else "✗ Offline"}</span>
+            </div>
+            <div class="domain-item">
+                <span class="domain-name">Database</span>
+                <span class="domain-position">{len(competitors)} records</span>
+            </div>
+        ''', unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f'''
+            <div class="domain-item">
+                <span class="domain-name">Last Update</span>
+                <span class="domain-position">{datetime.now().strftime("%H:%M:%S")}</span>
+            </div>
+            <div class="domain-item">
+                <span class="domain-name">Target</span>
+                <span class="domain-position">{target} domains</span>
+            </div>
+        ''', unsafe_allow_html=True)
+
 # Footer
-st.markdown("---")
-st.caption("Project Hunter Dashboard | Real-time competitor intelligence for Google Discover")
+st.markdown("<br><br>", unsafe_allow_html=True)
+st.markdown('''
+    <div style="text-align: center; color: #4a5568; font-size: 0.8rem; padding: 1rem;">
+        Project Hunter • Google Discover Intelligence Platform
+    </div>
+''', unsafe_allow_html=True)
+
+# Auto-refresh every 5 seconds
+st.markdown('''
+    <script>
+        setTimeout(function() {
+            window.location.reload();
+        }, 10000);
+    </script>
+''', unsafe_allow_html=True)

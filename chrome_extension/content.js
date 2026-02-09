@@ -1,60 +1,105 @@
-// Passive observer - no automation, just watches DOM
+// Fast Discover Article Tracker - Optimized for speed
 let discoveredDomains = new Set();
-let articlePosition = 0;
+let articleCount = 0;
 
-// Observer watches for Discover articles
-const observer = new MutationObserver(() => {
-  // Multiple selectors for Discover cards
-  const selectors = [
-    '[data-test-id="discover-card"]',
-    '[role="article"]',
-    'article a[href*="http"]',
-    '[data-hveid] a[href]'
-  ];
+// Excluded domains (Google, social, etc.)
+const EXCLUDED = [
+  'google.com', 'google.co', 'gstatic.com', 'googleapis.com',
+  'youtube.com', 'youtu.be', 'facebook.com', 'fb.com',
+  'twitter.com', 'x.com', 'instagram.com', 'tiktok.com',
+  'reddit.com', 'linkedin.com', 'pinterest.com',
+  'apple.com', 'apps.apple.com', 'play.google.com',
+  'wikipedia.org', 'spotify.com', 'amazon.com'
+];
 
-  selectors.forEach(selector => {
-    document.querySelectorAll(selector).forEach(element => {
-      const link = element.querySelector('a') || element;
-      const url = link.href;
+function isExcluded(domain) {
+  return EXCLUDED.some(ex => domain.includes(ex));
+}
 
-      if (!url || !url.startsWith('http')) return;
+function extractDomain(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
 
-      // Extract domain
-      const domain = new URL(url).hostname;
+function processLink(link) {
+  if (!link.href || !link.href.startsWith('http')) return;
 
-      // Skip Google/social domains
-      const excluded = ['google.com', 'youtube.com', 'facebook.com', 'twitter.com', 'instagram.com'];
-      if (excluded.some(ex => domain.includes(ex))) return;
+  const domain = extractDomain(link.href);
+  if (!domain || isExcluded(domain) || discoveredDomains.has(domain)) return;
 
-      // New domain found!
-      if (!discoveredDomains.has(domain)) {
-        discoveredDomains.add(domain);
+  discoveredDomains.add(domain);
+  articleCount++;
 
-        const articleData = {
-          domain: domain,
-          url: url,
-          title: element.querySelector('h3, h2')?.innerText || '',
-          position: articlePosition++,
-          timestamp: new Date().toISOString()
-        };
+  // Get title from nearby text
+  const title = link.innerText?.trim().substring(0, 150) ||
+                link.querySelector('span, div, h3, h2')?.innerText?.trim().substring(0, 150) || '';
 
-        // Send to background script
-        chrome.runtime.sendMessage({
-          type: 'NEW_DISCOVER_ARTICLE',
-          data: articleData
-        });
+  const data = {
+    domain: domain,
+    url: link.href,
+    title: title,
+    position: articleCount,
+    timestamp: new Date().toISOString()
+  };
 
-        console.log('[Discover Tracker] Found:', domain);
-      }
-    });
+  // Send immediately
+  chrome.runtime.sendMessage({ type: 'NEW_DISCOVER_ARTICLE', data: data });
+  console.log(`[Discover] #${articleCount}: ${domain}`);
+}
+
+function scanPage() {
+  // Method 1: Images with dimg_ prefix (mobile Discover)
+  document.querySelectorAll('img[id^="dimg_"]').forEach(img => {
+    const link = img.closest('a');
+    if (link) processLink(link);
   });
-});
 
-// Start observing when on Google Discover
-if (window.location.href.includes('google.com')) {
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
+  // Method 2: All external article links
+  document.querySelectorAll('a[href^="http"]').forEach(link => {
+    // Skip Google internal links
+    if (link.href.includes('google.com/search') ||
+        link.href.includes('google.com/url') ||
+        link.href.includes('accounts.google')) return;
+
+    // Must have image or substantial content
+    const hasImage = link.querySelector('img');
+    const hasText = link.innerText?.length > 15;
+
+    if (hasImage || hasText) {
+      processLink(link);
+    }
   });
-  console.log('[Discover Tracker] Monitoring active');
+
+  // Method 3: Data attribute cards
+  document.querySelectorAll('[data-hveid] a[href^="http"], [jsname] a[href^="http"]').forEach(el => {
+    const link = el.tagName === 'A' ? el : el.querySelector('a');
+    if (link) processLink(link);
+  });
+}
+
+// Run on Google pages
+if (window.location.hostname.includes('google.com')) {
+  console.log('[Discover Tracker] Active on:', window.location.href);
+
+  // Initial scans
+  setTimeout(scanPage, 500);
+  setTimeout(scanPage, 1500);
+  setTimeout(scanPage, 3000);
+
+  // Watch for DOM changes (infinite scroll)
+  const observer = new MutationObserver(() => scanPage());
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Scan on scroll (throttled to 200ms)
+  let scrollTimeout;
+  window.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(scanPage, 200);
+  }, { passive: true });
+
+  // Periodic scan every 2 seconds
+  setInterval(scanPage, 2000);
 }

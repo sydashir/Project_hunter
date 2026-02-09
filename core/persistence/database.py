@@ -294,6 +294,14 @@ class Database:
 
     # ==================== COMPETITORS & FEEDS (JSON) ====================
 
+    def save_competitor(self, competitor: CompetitorSite):
+        """Append a single competitor to JSON"""
+        existing = self.load_competitors()
+        existing.append(competitor.to_dict())
+        path = self.competitors_path / "discovered_sites.json"
+        with open(path, 'w') as f:
+            json.dump(existing, f, indent=2)
+
     def save_competitors(self, competitors: List[CompetitorSite]):
         """Save discovered competitors to JSON"""
         path = self.competitors_path / "discovered_sites.json"

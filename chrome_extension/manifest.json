@@ -4,10 +4,20 @@
   "version": "1.0",
   "description": "Passively captures Google Discover articles for Project Hunter",
   "permissions": ["storage", "activeTab"],
-  "host_permissions": ["*://www.google.com/*"],
+  "host_permissions": [
+    "*://www.google.com/*",
+    "*://google.com/*",
+    "*://*.google.com/*",
+    "*://news.google.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["*://www.google.com/*"],
+      "matches": [
+        "*://www.google.com/*",
+        "*://google.com/*",
+        "*://*.google.com/*",
+        "*://news.google.com/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
