@@ -58,7 +58,7 @@ async def receive_article(article: DiscoverArticle) -> Dict:
         niche="unknown",  # Will be inferred later
         discovery_source="chrome_extension",
         discovered_from=None,
-        authority_score=100.0 - article.position,  # Higher position = higher score
+        authority_score=min(100.0, max(0.0, 100.0 - article.position)),  # Higher position = higher score, clamped 0-100
         crawl_depth=0,
         metadata={
             'discover_position': article.position,

@@ -335,41 +335,6 @@ Press `Ctrl+C` in terminal - captured data is already saved!
 
 ---
 
-### **Step 2: Start Monitoring** (24-48 hours)
-
-Monitors RSS feeds and extracts article DNA.
-
-```bash
-python scripts/run_monitor.py
-```
-
-**What happens:**
-- Monitors 100+ RSS feeds every 60 seconds
-- Detects new articles automatically
-- Extracts DNA profiles (20+ data points per article)
-- Saves to `data/articles/articles.db`
-
-**Tip:** Let it run for 24-48 hours to collect 500+ articles
-
----
-
-### **Step 3: Generate Intelligence Report**
-
-Analyzes all data and identifies winning patterns.
-
-```bash
-python scripts/generate_report.py
-```
-
-**What you get:**
-- 🏆 Winning niche with score (0-100)
-- 📐 Structural blueprint (word count, images, schema)
-- 💡 Title formulas (proven patterns)
-- ⏰ Timing strategy (best publish times)
-- 📊 Complete actionable plan
-
----
-
 ## 📊 What You Get
 
 ✅ **Winning Niche** - Score 0-100, clear recommendation (HOT/WARM/MODERATE/COLD)
@@ -401,68 +366,36 @@ python scripts/generate_report.py
 
 ```
 project-hunter/
-├── discover_scraper.py        # NEW: Real Discover mobile scraper
-├── discover_api_interceptor.py # NEW: API interceptor
-├── dashboard.py               # NEW: Streamlit dashboard
+├── dashboard.py               # Streamlit dashboard
 │
-├── chrome_extension/          # Chrome extension (alternative method)
+├── chrome_extension/          # Chrome extension for Discover capture
 │   ├── manifest.json
 │   ├── content.js
 │   ├── background.js
 │   ├── popup.html
-│   └── popup.js
+│   ├── popup.js
+│   └── icon.png
 │
 ├── api/                       # FastAPI server
-│   ├── discover_api.py
-│   └── test_api.py
-│
-├── config/
-│   ├── seed_urls.yaml        # 7 seed competitors + discovery settings
-│   └── niches.yaml            # 6 niches with keywords
+│   └── discover_api.py
 │
 ├── core/
-│   ├── scout/                 # Discovery & Monitoring
-│   │   ├── competitor_discovery.py
-│   │   ├── rss_discovery.py
-│   │   └── rss_monitor.py
-│   ├── architect/             # DNA Extraction
-│   │   └── dna_extractor.py
-│   ├── intelligence/          # Pattern Recognition
-│   │   ├── pattern_engine.py
-│   │   ├── niche_scorer.py
-│   │   ├── title_analyzer.py
-│   │   └── timing_analyzer.py
-│   ├── orchestrator/          # Coordination
-│   │   ├── main_controller.py
-│   │   ├── task_queue.py
-│   │   └── rate_limiter.py
 │   └── persistence/           # Data Layer
 │       ├── database.py
 │       └── models.py
 │
 ├── scripts/
-│   ├── run_discovery.py      # Step 1
-│   ├── run_monitor.py         # Step 2
-│   └── generate_report.py    # Step 3
+│   └── extract_discover_dna.py  # DNA extraction from captured articles
 │
 ├── data/                      # Auto-created during runtime
 │   ├── competitors/
-│   │   ├── discovered_sites.json
-│   │   └── rss_feeds.json
+│   │   └── discovered_sites.json
 │   ├── articles/
-│   │   ├── articles.db       # SQLite database
-│   │   └── dna_profiles/
-│   └── intelligence/
-│       ├── patterns.json
-│       ├── niche_scores.json
-│       ├── title_formulas.json
-│       └── timing_insights.json
+│   └── dna_analysis/          # CSV output from DNA extraction
 │
-├── .env                       # API keys (create this)
 ├── .gitignore
 ├── requirements.txt
-├── README.md
-└── SETUP_GUIDE.md            # NEW: Detailed Chrome extension setup
+└── README.md
 ```
 
 ---

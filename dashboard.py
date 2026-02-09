@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+import html as html_lib
 import requests
 from pathlib import Path
 from collections import Counter
@@ -256,14 +257,14 @@ def get_api_status():
         if response.status_code == 200:
             return True, response.json()
         return False, {"total_domains": 0, "domains": []}
-    except:
+    except (requests.RequestException, ValueError):
         return False, {"total_domains": 0, "domains": []}
 
 def reset_api():
     try:
-        requests.post("http://localhost:8000/api/discover/reset", timeout=2)
-        return True
-    except:
+        response = requests.post("http://localhost:8000/api/discover/reset", timeout=2)
+        return response.status_code == 200
+    except requests.RequestException:
         return False
 
 def load_competitors():
@@ -271,7 +272,7 @@ def load_competitors():
         from core.persistence.database import Database
         db = Database()
         return db.load_competitors()
-    except:
+    except (ImportError, FileNotFoundError, Exception) as e:
         return []
 
 # Header
@@ -369,9 +370,10 @@ with tab1:
 
         for i, domain in enumerate(recent):
             position = len(domains) - i
+            safe_domain = html_lib.escape(domain)
             st.markdown(f'''
                 <div class="domain-item">
-                    <span class="domain-name">{domain}</span>
+                    <span class="domain-name">{safe_domain}</span>
                     <span class="domain-position">#{position}</span>
                 </div>
             ''', unsafe_allow_html=True)
@@ -550,7 +552,7 @@ st.markdown('''
     </div>
 ''', unsafe_allow_html=True)
 
-# Auto-refresh every 5 seconds
+# Auto-refresh every 10 seconds
 st.markdown('''
     <script>
         setTimeout(function() {

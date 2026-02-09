@@ -57,6 +57,7 @@ data/dna_analysis/
 *.log
 *.pid
 nohup.out
+extraction_output.txt
 
 # Streamlit cache
 .streamlit/

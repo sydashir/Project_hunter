@@ -13,7 +13,7 @@ const EXCLUDED = [
 ];
 
 function isExcluded(domain) {
-  return EXCLUDED.some(ex => domain.includes(ex));
+  return EXCLUDED.some(ex => domain === ex || domain.endsWith('.' + ex));
 }
 
 function extractDomain(url) {
@@ -89,8 +89,12 @@ if (window.location.hostname.includes('google.com')) {
   setTimeout(scanPage, 1500);
   setTimeout(scanPage, 3000);
 
-  // Watch for DOM changes (infinite scroll)
-  const observer = new MutationObserver(() => scanPage());
+  // Watch for DOM changes (infinite scroll) — debounced
+  let mutationTimeout;
+  const observer = new MutationObserver(() => {
+    clearTimeout(mutationTimeout);
+    mutationTimeout = setTimeout(scanPage, 200);
+  });
   observer.observe(document.body, { childList: true, subtree: true });
 
   // Scan on scroll (throttled to 200ms)

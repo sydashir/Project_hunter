@@ -300,8 +300,6 @@ class DiscoverDNAExtractor:
             data['original_title'] = title
             data['discover_position'] = position
 
-            await context.close()
-
             print(f"       {data['word_count']} words, {data['image_count']} imgs, schema: {data.get('has_article_schema', False)}")
             return data
 
@@ -315,6 +313,11 @@ class DiscoverDNAExtractor:
                 'extraction_status': 'error',
                 'error_message': str(e)[:200]
             }
+        finally:
+            try:
+                await context.close()
+            except Exception:
+                pass
 
     async def run(self, limit: int = None):
         """Run DNA extraction on all captured URLs"""
@@ -336,7 +339,7 @@ class DiscoverDNAExtractor:
             sites = sites[:limit]
 
         print(f"\n{'='*60}")
-        print(f"DISCOVER DNA EXTRACTOR")
+        print("DISCOVER DNA EXTRACTOR")
         print(f"{'='*60}")
         print(f"Sites to process: {len(sites)}")
         print(f"Output: {OUTPUT_DIR}/discover_dna.csv")
@@ -432,7 +435,7 @@ class DiscoverDNAExtractor:
         avg_images = sum(r.get('image_count', 0) for r in successful) / len(successful)
         avg_h2 = sum(r.get('h2_count', 0) for r in successful) / len(successful)
 
-        print(f"\n--- CONTENT AVERAGES ---")
+        print("\n--- CONTENT AVERAGES ---")
         print(f"Avg word count: {avg_words:.0f}")
         print(f"Avg images: {avg_images:.1f}")
         print(f"Avg H2 headings: {avg_h2:.1f}")
@@ -443,7 +446,7 @@ class DiscoverDNAExtractor:
             p = r.get('title_pattern', 'unknown')
             patterns[p] = patterns.get(p, 0) + 1
 
-        print(f"\n--- TITLE PATTERNS ---")
+        print("\n--- TITLE PATTERNS ---")
         for p, count in sorted(patterns.items(), key=lambda x: -x[1]):
             pct = count / len(successful) * 100
             print(f"{p}: {count} ({pct:.0f}%)")
@@ -452,13 +455,13 @@ class DiscoverDNAExtractor:
         article_schema = sum(1 for r in successful if r.get('has_article_schema'))
         news_schema = sum(1 for r in successful if r.get('has_newsarticle_schema'))
 
-        print(f"\n--- SCHEMA MARKUP ---")
+        print("\n--- SCHEMA MARKUP ---")
         print(f"Has Article schema: {article_schema}/{len(successful)} ({article_schema/len(successful)*100:.0f}%)")
         print(f"Has NewsArticle schema: {news_schema}/{len(successful)} ({news_schema/len(successful)*100:.0f}%)")
 
         # Mobile optimization
         mobile = sum(1 for r in successful if r.get('mobile_optimized'))
-        print(f"\n--- TECHNICAL ---")
+        print("\n--- TECHNICAL ---")
         print(f"Mobile optimized: {mobile}/{len(successful)} ({mobile/len(successful)*100:.0f}%)")
 
         webp = sum(1 for r in successful if r.get('uses_webp'))

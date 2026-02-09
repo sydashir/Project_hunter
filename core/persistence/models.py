@@ -4,7 +4,7 @@ Data models for Project Hunter
 Defines the structure for competitors, RSS feeds, articles, and DNA profiles.
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, fields
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 from enum import Enum
@@ -50,7 +50,8 @@ class CompetitorSite:
     @classmethod
     def from_dict(cls, data: Dict) -> 'CompetitorSite':
         """Create CompetitorSite from dictionary"""
-        return cls(**data)
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass
@@ -75,7 +76,8 @@ class RSSFeed:
     @classmethod
     def from_dict(cls, data: Dict) -> 'RSSFeed':
         """Create RSSFeed from dictionary"""
-        return cls(**data)
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass

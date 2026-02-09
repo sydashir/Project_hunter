@@ -8,6 +8,7 @@ Provides atomic writes, concurrent reads, and data integrity.
 import sqlite3
 import json
 import os
+import threading
 from pathlib import Path
 from typing import List, Dict, Optional, Any
 from datetime import datetime
@@ -294,13 +295,19 @@ class Database:
 
     # ==================== COMPETITORS & FEEDS (JSON) ====================
 
+    _competitor_lock = threading.Lock()
+
     def save_competitor(self, competitor: CompetitorSite):
-        """Append a single competitor to JSON"""
-        existing = self.load_competitors()
-        existing.append(competitor.to_dict())
-        path = self.competitors_path / "discovered_sites.json"
-        with open(path, 'w') as f:
-            json.dump(existing, f, indent=2)
+        """Append a single competitor to JSON (thread-safe, deduped by domain)"""
+        with self._competitor_lock:
+            existing = self.load_competitors()
+            known_domains = {e.get('domain') for e in existing}
+            if competitor.domain in known_domains:
+                return  # Skip duplicate
+            existing.append(competitor.to_dict())
+            path = self.competitors_path / "discovered_sites.json"
+            with open(path, 'w') as f:
+                json.dump(existing, f, indent=2)
 
     def save_competitors(self, competitors: List[CompetitorSite]):
         """Save discovered competitors to JSON"""
